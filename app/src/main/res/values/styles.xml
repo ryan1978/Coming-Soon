@@ -1,0 +1,15 @@
+<resources>
+
+    <!-- Base application theme. -->
+    <style name="AppTheme" parent="Theme.AppCompat.Light.DarkActionBar">
+        <item name="android:windowAnimationStyle">@style/Slide.Activity</item>
+    </style>
+
+    <style name="Slide.Activity" parent="@android:style/Animation.Activity">
+        <item name="android:activityOpenEnterAnimation">@anim/slide_in_ltr</item>
+        <item name="android:activityOpenExitAnimation">@anim/slide_out_ltr</item>
+        <item name="android:activityCloseEnterAnimation">@anim/slide_in_rtl</item>
+        <item name="android:activityCloseExitAnimation">@anim/slide_out_rtl</item>
+    </style>
+
+</resources>
