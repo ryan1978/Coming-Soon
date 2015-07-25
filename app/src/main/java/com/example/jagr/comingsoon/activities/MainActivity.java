@@ -196,7 +196,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
             // As the grid is scrolled towards the bottom fetch more movies
             if (mUserScrolled && !mAdapter.isFetching() && mAdapter.hasMorePages()) {
                 final int lastItem = firstVisibleItem + visibleItemCount;
-                if (lastItem >= mAdapter.getCount() - 6) {
+                if (lastItem >= mAdapter.getCount() - 10) {
                     mAdapter.fetch();
                 }
             }
