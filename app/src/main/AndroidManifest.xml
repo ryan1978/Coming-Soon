@@ -38,6 +38,10 @@
                 android:value=".activities.MainActivity" />
         </activity>
 
+        <provider
+            android:name=".data.MoviesProvider"
+            android:authorities="com.example.jagr.comingsoon.app" />
+
     </application>
 
 </manifest>
