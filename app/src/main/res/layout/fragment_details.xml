@@ -16,6 +16,7 @@
         android:background="#00FFFFFF" />
 
     <ScrollView
+        android:id="@+id/details_scrollview"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
@@ -88,6 +89,48 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:textColor="#FFFFFF" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textStyle="bold"
+                        android:textColor="#FFFFFF"
+                        android:textSize="18sp"
+                        android:text="@string/title_videos" />
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginTop="5dp"
+                        android:layout_marginBottom="5dp"
+                        android:background="#FFFFFF" />
+
+                    <ListView
+                        android:id="@+id/video_list"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content">
+                    </ListView>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textStyle="bold"
+                        android:textColor="#FFFFFF"
+                        android:textSize="18sp"
+                        android:text="@string/title_reviews" />
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginTop="5dp"
+                        android:layout_marginBottom="5dp"
+                        android:background="#FFFFFF" />
+
+                    <ListView
+                        android:id="@+id/review_list"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content">
+                    </ListView>
 
                 </LinearLayout>
 

@@ -34,6 +34,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.lang.ref.WeakReference;
 import java.net.HttpURLConnection;
 import java.net.URL;
 
@@ -207,16 +208,15 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
      * Custom adapter class to populate gridview
      */
     private static class MovieAdapter extends BaseAdapter {
-        private final String LOG_TAG = MovieAdapter.class.getSimpleName();
-
-        private Context mContext    = null;
+        private static final String LOG_TAG = MovieAdapter.class.getSimpleName();
+        private final WeakReference<MainActivity> mActivity;
         private int mCurrentPage    = 0;
         private int mTotalPages     = 0;
         private JSONArray mMovies   = new JSONArray();
         private boolean mFetching   = false;
 
-        public MovieAdapter(Context context) {
-            mContext = context;
+        public MovieAdapter(MainActivity activity) {
+            mActivity = new WeakReference<MainActivity>(activity);
         }
 
         @Override
@@ -236,18 +236,21 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
         @Override
         public View getView(int position, View convertView, ViewGroup parent) {
-            JSONObject movie    = mMovies.optJSONObject(position);
-            String posterPath   = movie.optString("poster_path");
+            JSONObject movie        = mMovies.optJSONObject(position);
+            String posterPath       = movie.optString("poster_path");
+            MainActivity activity   = mActivity.get();
 
-            if (convertView == null) {
-                LayoutInflater vi = LayoutInflater.from(mContext);
-                convertView = vi.inflate(R.layout.grid_item_movie, parent, false);
-            }
+            if (activity != null) {
+                if (convertView == null) {
+                    LayoutInflater vi = LayoutInflater.from(activity);
+                    convertView = vi.inflate(R.layout.grid_item_movie, parent, false);
+                }
 
-            ImageView poster = (ImageView) convertView.findViewById(R.id.poster_image);
+                ImageView poster = (ImageView) convertView.findViewById(R.id.poster_image);
 
-            if (posterPath.trim().length() > 0) {
-                Picasso.with(mContext).load("http://image.tmdb.org/t/p/w185" + posterPath).into(poster);
+                if (posterPath.trim().length() > 0) {
+                    Picasso.with(activity).load("http://image.tmdb.org/t/p/w185" + posterPath).into(poster);
+                }
             }
 
             return convertView;
@@ -307,77 +310,88 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
          */
         public void fetch() {
             if (!mFetching) {
-                FetchMoviesTask fetcher = new FetchMoviesTask();
+                FetchMoviesTask fetcher = new FetchMoviesTask(MovieAdapter.this);
                 fetcher.execute();
             }
         }
 
-        private class FetchMoviesTask extends AsyncTask<Void, Void, String> {
+        private static class FetchMoviesTask extends AsyncTask<Void, Void, String> {
+            private static final String LOG_TAG = FetchMoviesTask.class.getSimpleName();
+            private final WeakReference<MovieAdapter> mAdapter;
+
+            FetchMoviesTask(MovieAdapter adapter) {
+                mAdapter = new WeakReference<>(adapter);
+            }
 
             @Override
             public void onPreExecute() {
-                mFetching = true;
+                MovieAdapter adapter = mAdapter.get();
+                if (adapter != null) {
+                    adapter.mFetching = true;
+                }
             }
 
             @Override
             public String doInBackground(Void... params) {
-
-                HttpURLConnection httpConn  = null;
-                BufferedReader reader       = null;
-
                 String jsonResponse         = null;
+                final MovieAdapter adapter  = mAdapter.get();
 
-                try {
-                    final String MOVIEDB_BASE_URL   = "http://api.themoviedb.org/3/discover/movie?";
-                    final String PAGE_PARAM         = "page";
-                    final String SORT_PARAM         = "sort_by";
-                    final String KEY_PARAM          = "api_key";
+                if (adapter != null) {
+                    HttpURLConnection httpConn  = null;
+                    BufferedReader reader       = null;
 
-                    Uri builtUri = Uri.parse(MOVIEDB_BASE_URL).buildUpon()
-                            .appendQueryParameter(PAGE_PARAM, mCurrentPage == 0 ? "1" : String.valueOf(mCurrentPage + 1))
-                            .appendQueryParameter(SORT_PARAM, Utility.getPreferredSorting(mContext))
-                            .appendQueryParameter(KEY_PARAM, Utility.getApiKey(mContext))
-                            .build();
+                    try {
+                        final String MOVIEDB_BASE_URL   = "http://api.themoviedb.org/3/discover/movie?";
+                        final String PAGE_PARAM         = "page";
+                        final String SORT_PARAM         = "sort_by";
+                        final String KEY_PARAM          = "api_key";
 
-                    // TODO: If sort is by highest rated, add vote_count.gte=?? param to URI
+                        Uri builtUri = Uri.parse(MOVIEDB_BASE_URL).buildUpon()
+                                .appendQueryParameter(PAGE_PARAM, adapter.mCurrentPage == 0 ? "1" : String.valueOf(adapter.mCurrentPage + 1))
+                                .appendQueryParameter(SORT_PARAM, Utility.getPreferredSorting(adapter.mActivity.get()))
+                                .appendQueryParameter(KEY_PARAM, Utility.getApiKey(adapter.mActivity.get()))
+                                .build();
 
-                    URL url = new URL(builtUri.toString());
+                        // TODO: If sort is by highest rated, add vote_count.gte=?? param to URI
 
-                    Log.d(LOG_TAG, url.toString());
+                        URL url = new URL(builtUri.toString());
 
-                    httpConn = (HttpURLConnection) url.openConnection();
-                    httpConn.setRequestMethod("GET");
-                    httpConn.connect();
+                        Log.d(LOG_TAG, url.toString());
 
-                    InputStream inputStream = httpConn.getInputStream();
-                    StringBuilder buffer = new StringBuilder();
-                    if (inputStream == null) {
-                        return null;
-                    }
-                    reader = new BufferedReader(new InputStreamReader(inputStream));
+                        httpConn = (HttpURLConnection) url.openConnection();
+                        httpConn.setRequestMethod("GET");
+                        httpConn.connect();
 
-                    String line;
-                    while ((line = reader.readLine()) != null) {
-                        buffer.append(line);
-                    }
+                        InputStream inputStream = httpConn.getInputStream();
+                        StringBuilder buffer = new StringBuilder();
+                        if (inputStream == null) {
+                            return null;
+                        }
+                        reader = new BufferedReader(new InputStreamReader(inputStream));
 
-                    if (buffer.length() == 0) {
-                        return null;
-                    }
+                        String line;
+                        while ((line = reader.readLine()) != null) {
+                            buffer.append(line);
+                        }
 
-                    jsonResponse = buffer.toString();
-                } catch (IOException e) {
-                    Log.e(LOG_TAG, "Error", e);
-                    e.printStackTrace();
-                } finally {
-                    if (httpConn != null) {
-                        httpConn.disconnect();
-                    }
-                    if (reader != null) {
-                        try {
-                            reader.close();
-                        } catch (final IOException e) {
-                            Log.e(LOG_TAG, "Error closing stream", e);
+                        if (buffer.length() == 0) {
+                            return null;
+                        }
+
+                        jsonResponse = buffer.toString();
+                    } catch (IOException e) {
+                        Log.e(LOG_TAG, "Error", e);
+                        e.printStackTrace();
+                    } finally {
+                        if (httpConn != null) {
+                            httpConn.disconnect();
+                        }
+                        if (reader != null) {
+                            try {
+                                reader.close();
+                            } catch (final IOException e) {
+                                Log.e(LOG_TAG, "Error closing stream", e);
+                            }
                         }
                     }
                 }
@@ -387,33 +401,37 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
             @Override
             public void onPostExecute(String jsonResponse) {
+                MovieAdapter adapter = mAdapter.get();
+
                 if (jsonResponse != null) {
-                    try {
-                        JSONObject json = new JSONObject(jsonResponse);
-                        JSONArray results = json.optJSONArray("results");
-                        int page = json.optInt("page");
-                        int totalPages = json.optInt("total_pages");
+                    if (adapter != null) {
+                        try {
+                            JSONObject json = new JSONObject(jsonResponse);
+                            JSONArray results = json.optJSONArray("results");
+                            int page = json.optInt("page");
+                            int totalPages = json.optInt("total_pages");
 
-                        mCurrentPage = page;
-                        mTotalPages = totalPages < 1000 ? totalPages : 1000;
+                            adapter.mCurrentPage = page;
+                            adapter.mTotalPages = totalPages < 1000 ? totalPages : 1000;
 
-                        for (int i = 0; i < results.length(); i++) {
-                            JSONObject movie = results.optJSONObject(i);
+                            for (int i = 0; i < results.length(); i++) {
+                                JSONObject movie = results.optJSONObject(i);
 
-                            // Filter out movies w/o a poster_path
-                            if (!movie.isNull("poster_path") && !movie.optString("poster_path").equals("")) {
-                                mMovies.put(results.optJSONObject(i));
+                                // Filter out movies w/o a poster_path
+                                if (!movie.isNull("poster_path") && !movie.optString("poster_path").equals("")) {
+                                    adapter.mMovies.put(results.optJSONObject(i));
+                                }
                             }
-                        }
 
-                        notifyDataSetChanged();
-                    } catch (JSONException e) {
-                        Log.e(LOG_TAG, e.toString(), e);
-                        e.printStackTrace();
+                            adapter.notifyDataSetChanged();
+                        } catch (JSONException e) {
+                            Log.e(LOG_TAG, e.toString(), e);
+                            e.printStackTrace();
+                        }
                     }
                 }
 
-                mFetching = false;
+                adapter.mFetching = false;
             }
         }
     }
