@@ -40,7 +40,7 @@
 
         <provider
             android:name=".data.MoviesProvider"
-            android:authorities="com.example.jagr.comingsoon.app" />
+            android:authorities="com.example.jagr.comingsoon.app.provider" />
 
     </application>
 
