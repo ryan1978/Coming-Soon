@@ -1,9 +1,11 @@
 package com.example.jagr.comingsoon.activities;
 
-import android.content.Context;
+import android.app.Activity;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -24,6 +26,8 @@ import android.widget.ImageView;
 
 import com.example.jagr.comingsoon.R;
 import com.example.jagr.comingsoon.Utility;
+import com.example.jagr.comingsoon.data.MoviesContract.MovieEntry;
+import com.example.jagr.comingsoon.data.MoviesDBHelper;
 import com.squareup.picasso.Picasso;
 
 import org.json.JSONArray;
@@ -37,6 +41,7 @@ import java.io.InputStreamReader;
 import java.lang.ref.WeakReference;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.Iterator;
 
 public class MainActivity extends AppCompatActivity implements SharedPreferences.OnSharedPreferenceChangeListener {
 
@@ -131,8 +136,8 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
     @Override
     public void onSharedPreferenceChanged(SharedPreferences prefs, String key) {
         // If the user changes the api key or sort settings attempt to refetch movies
-        if (key.equals(getString(R.string.pref_api_key_key)) ||
-                key.equals(getString(R.string.pref_sort_key))) {
+        if (key.equals(getString(R.string.pref_api_key_key))
+                || key.equals(getString(R.string.pref_sort_key))) {
             if (Utility.isApiKeySet(this)) {
                 mAdapter.clearData();
                 mAdapter.fetch();
@@ -151,8 +156,9 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 .setMessage("To use this application you must have a themoviedb.org API key set!")
                 .setOnCancelListener(new DialogInterface.OnCancelListener() {
                     @Override
-                    public void onCancel(DialogInterface dialogInterface) {
+                    public void onCancel(DialogInterface dialog) {
                         Log.d(LOG_TAG, "canceled!");
+                        dialog.dismiss();
                         finish();
                     }
                 })
@@ -166,11 +172,13 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                     public void onClick(DialogInterface dialog, int id) {
                         // User clicked enter key button
                         startActivity(new Intent(MainActivity.this, SettingsActivity.class));
+                        dialog.dismiss();
                     }
                 })
                 .setNegativeButton("Close", new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int id) {
                         // User clicked close button
+                        dialog.dismiss();
                         finish();
                     }
                 })
@@ -209,14 +217,14 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
      */
     private static class MovieAdapter extends BaseAdapter {
         private static final String LOG_TAG = MovieAdapter.class.getSimpleName();
-        private final WeakReference<MainActivity> mActivity;
+        private final WeakReference<Activity> mActivity;
         private int mCurrentPage    = 0;
         private int mTotalPages     = 0;
         private JSONArray mMovies   = new JSONArray();
         private boolean mFetching   = false;
 
-        public MovieAdapter(MainActivity activity) {
-            mActivity = new WeakReference<MainActivity>(activity);
+        public MovieAdapter(Activity activity) {
+            mActivity = new WeakReference<Activity>(activity);
         }
 
         @Override
@@ -238,7 +246,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         public View getView(int position, View convertView, ViewGroup parent) {
             JSONObject movie        = mMovies.optJSONObject(position);
             String posterPath       = movie.optString("poster_path");
-            MainActivity activity   = mActivity.get();
+            Activity activity       = mActivity.get();
 
             if (activity != null) {
                 if (convertView == null) {
@@ -309,10 +317,86 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
          * Attempts to fetch movie records from the api
          */
         public void fetch() {
-            if (!mFetching) {
-                FetchMoviesTask fetcher = new FetchMoviesTask(MovieAdapter.this);
-                fetcher.execute();
+            final Activity activity = mActivity.get();
+
+            if (activity != null && !mFetching) {
+                String sortingPref = Utility.getPreferredSorting(activity);
+                if (sortingPref != null && sortingPref.equals(activity.getString(R.string.pref_sort_favorite))) {
+                    fetchFavorites();
+                } else {
+                    FetchMoviesTask fetcher = new FetchMoviesTask(MovieAdapter.this);
+                    fetcher.execute();
+                }
             }
+        }
+
+        private void fetchFavorites() {
+            final Activity activity = mActivity.get();
+            final JSONArray data    = new JSONArray();
+
+            if (activity != null) {
+                final SQLiteDatabase db = new MoviesDBHelper(activity).getReadableDatabase();
+                final Cursor cursor = db.query(
+                        MovieEntry.TABLE_NAME,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        MovieEntry.COLUMN_TITLE
+                );
+
+                while (cursor.moveToNext()) {
+                    JSONObject movie = new JSONObject();
+                    try {
+                        movie.put("id",
+                                cursor.getLong(cursor.getColumnIndex(MovieEntry._ID)));
+                        movie.put(MovieEntry.COLUMN_ADULT,
+                                cursor.getInt(cursor.getColumnIndex(MovieEntry.COLUMN_ADULT)) == 1);
+                        movie.put(MovieEntry.COLUMN_BACKDROP_PATH,
+                                cursor.getString(cursor.getColumnIndex(MovieEntry.COLUMN_BACKDROP_PATH)));
+                        movie.put(MovieEntry.COLUMN_ORIGINAL_LANGUAGE,
+                                cursor.getString(cursor.getColumnIndex(MovieEntry.COLUMN_ORIGINAL_LANGUAGE)));
+                        movie.put(MovieEntry.COLUMN_ORIGINAL_TITLE,
+                                cursor.getString(cursor.getColumnIndex(MovieEntry.COLUMN_ORIGINAL_TITLE)));
+                        movie.put(MovieEntry.COLUMN_OVERVIEW,
+                                cursor.getString(cursor.getColumnIndex(MovieEntry.COLUMN_OVERVIEW)));
+                        movie.put(MovieEntry.COLUMN_RELEASE_DATE,
+                                cursor.getString(cursor.getColumnIndex(MovieEntry.COLUMN_RELEASE_DATE)));
+                        movie.put(MovieEntry.COLUMN_POSTER_PATH,
+                                cursor.getString(cursor.getColumnIndex(MovieEntry.COLUMN_POSTER_PATH)));
+                        movie.put(MovieEntry.COLUMN_POPULARITY,
+                                cursor.getDouble(cursor.getColumnIndex(MovieEntry.COLUMN_POPULARITY)));
+                        movie.put(MovieEntry.COLUMN_TITLE,
+                                cursor.getString(cursor.getColumnIndex(MovieEntry.COLUMN_TITLE)));
+                        movie.put(MovieEntry.COLUMN_VIDEO,
+                                cursor.getInt(cursor.getColumnIndex(MovieEntry.COLUMN_VIDEO)) == 1);
+                        movie.put(MovieEntry.COLUMN_VOTE_AVERAGE,
+                                cursor.getFloat(cursor.getColumnIndex(MovieEntry.COLUMN_VOTE_AVERAGE)));
+                        movie.put(MovieEntry.COLUMN_VOTE_COUNT,
+                                cursor.getInt(cursor.getColumnIndex(MovieEntry.COLUMN_VOTE_COUNT)));
+
+                        // Replace null values with JSONObject.NULL
+                        Iterator<String> movieKeys = movie.keys();
+                        while (movieKeys.hasNext()) {
+                            String k = movieKeys.next();
+                            if (movie.isNull(k)) movie.put(k, JSONObject.NULL);
+                        }
+
+                        data.put(movie);
+                    } catch (JSONException e) {
+                        Log.e(LOG_TAG, e.toString());
+                        e.printStackTrace();
+                    }
+                }
+
+                Log.d(LOG_TAG, "Favorites: " + data.toString());
+            }
+
+            mCurrentPage = 1;
+            mTotalPages = 1;
+            mMovies = data;
+            notifyDataSetChanged();
         }
 
         private static class FetchMoviesTask extends AsyncTask<Void, Void, String> {

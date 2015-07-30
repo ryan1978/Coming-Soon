@@ -12,11 +12,13 @@
     <!-- START PREFERENCES -->
     <string name="pref_api_key_label" >TheMovieDB API Key</string>
     <string name="pref_api_key_key" translatable="false">api_key</string>
-    <string name="pref_favorites" translatable="false">favorites</string>
 
     <string name="pref_sort_label">Sort Order</string>
     <string name="pref_sort_key" translatable="false">sort_order</string>
-    <string name="pref_sort_default" translatable="false">popularity.desc</string>
+    <string name="pref_sort_popular" translatable="false">popularity.desc</string>
+    <string name="pref_sort_rating" translatable="false">vote_average.desc</string>
+    <string name="pref_sort_favorite" translatable="false">favorites</string>
+    <string name="pref_sort_default" translatable="false">@string/pref_sort_popular</string>
     <!-- END PREFERENCES -->
 
 </resources>

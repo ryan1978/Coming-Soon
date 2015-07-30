@@ -2,10 +2,16 @@ package com.example.jagr.comingsoon.fragments;
 
 import android.app.Activity;
 import android.app.Fragment;
+import android.content.ContentValues;
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -23,9 +29,11 @@ import android.widget.TextView;
 import com.example.jagr.comingsoon.R;
 import com.example.jagr.comingsoon.Utility;
 import com.example.jagr.comingsoon.activities.MainActivity;
+import com.example.jagr.comingsoon.data.MoviesContract;
 import com.example.jagr.comingsoon.data.MoviesContract.MovieEntry;
 import com.example.jagr.comingsoon.data.MoviesContract.VideoEntry;
 import com.example.jagr.comingsoon.data.MoviesContract.ReviewEntry;
+import com.example.jagr.comingsoon.data.MoviesDBHelper;
 import com.squareup.picasso.Picasso;
 
 import org.json.JSONArray;
@@ -39,6 +47,8 @@ import java.io.InputStreamReader;
 import java.lang.ref.WeakReference;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * A placeholder fragment containing a simple view.
@@ -79,7 +89,7 @@ public class DetailsFragment extends Fragment {
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
         inflater.inflate(R.menu.menu_details, menu);
 
-        if (Utility.isFavorite(getActivity(), mMovie)) {
+        if (isFavorite(mMovie)) {
             MenuItem item = menu.findItem(R.id.action_favorite);
             if (item != null) {
                 item.setIcon(R.drawable.ic_action_action_favorite);
@@ -96,11 +106,11 @@ public class DetailsFragment extends Fragment {
 
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_favorite) {
-            if (Utility.isFavorite(getActivity(), mMovie)) {
-                if (Utility.removeFavorite(getActivity(), mMovie)) {
+            if (isFavorite(mMovie)) {
+                if (removeFavorite(mMovie)) {
                     item.setIcon(R.drawable.ic_action_action_favorite_outline);
                 }
-            } else if (Utility.addFavorite(getActivity(), mMovie)) {
+            } else if (addFavorite(mMovie)) {
                 item.setIcon(R.drawable.ic_action_action_favorite);
             }
 
@@ -122,6 +132,7 @@ public class DetailsFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
 
+        // TODO: Redo fragment_details layout to avoid having nested scrollviews/listviews
         final View rootView = inflater.inflate(R.layout.fragment_details, container, false);
 
         if (mMovie != null) {
@@ -611,5 +622,92 @@ public class DetailsFragment extends Fragment {
                 adapter.mFetching = false;
             }
         }
+    }
+
+    public boolean isFavorite(JSONObject movie) {
+        boolean result = false;
+
+        if (movie != null) {
+            final int movieId = movie.optInt("id");
+
+            if (movieId > 0) {
+                final SQLiteDatabase db = new MoviesDBHelper(getActivity()).getReadableDatabase();
+                Cursor cursor = db.query(
+                        MoviesContract.MovieEntry.TABLE_NAME,
+                        new String[] { MoviesContract.MovieEntry._ID },
+                        MoviesContract.MovieEntry._ID + " = ?",
+                        new String[] { String.valueOf(movieId) },
+                        null,
+                        null,
+                        null
+                );
+                result = cursor.getCount() > 0;
+                cursor.close();
+                db.close();
+            }
+        }
+
+        return result;
+    }
+
+    // TODO: Download and store poster and backdrop images to internal storage
+    public boolean addFavorite(JSONObject movie) {
+        boolean result = false;
+
+        if (movie != null) {
+            if (!isFavorite(movie)) {
+                final SQLiteDatabase db = new MoviesDBHelper(getActivity()).getWritableDatabase();
+                final ContentValues values = new ContentValues();
+                values.put(MovieEntry._ID, movie.optLong("id"));
+                values.put(MovieEntry.COLUMN_ADULT, movie.optBoolean(MovieEntry.COLUMN_ADULT) ? 1 : 0);
+                values.put(MovieEntry.COLUMN_BACKDROP_PATH,
+                        movie.isNull(MovieEntry.COLUMN_BACKDROP_PATH) ? null : movie.optString(MovieEntry.COLUMN_BACKDROP_PATH));
+                values.put(MovieEntry.COLUMN_ORIGINAL_LANGUAGE,
+                        movie.isNull(MovieEntry.COLUMN_ORIGINAL_LANGUAGE) ? null : movie.optString(MovieEntry.COLUMN_ORIGINAL_LANGUAGE));
+                values.put(MovieEntry.COLUMN_ORIGINAL_TITLE,
+                        movie.isNull(MovieEntry.COLUMN_ORIGINAL_TITLE) ? null : movie.optString(MovieEntry.COLUMN_ORIGINAL_TITLE));
+                values.put(MovieEntry.COLUMN_OVERVIEW,
+                        movie.isNull(MovieEntry.COLUMN_OVERVIEW) ? null : movie.optString(MovieEntry.COLUMN_OVERVIEW));
+                values.put(MovieEntry.COLUMN_RELEASE_DATE, movie.optString(MovieEntry.COLUMN_RELEASE_DATE));
+                values.put(MovieEntry.COLUMN_POSTER_PATH,
+                        movie.isNull(MovieEntry.COLUMN_POSTER_PATH) ? null : movie.optString(MovieEntry.COLUMN_POSTER_PATH));
+                values.put(MovieEntry.COLUMN_POPULARITY, movie.optDouble(MovieEntry.COLUMN_POPULARITY));
+                values.put(MovieEntry.COLUMN_TITLE,
+                        movie.isNull(MovieEntry.COLUMN_TITLE) ? null : movie.optString(MovieEntry.COLUMN_TITLE));
+                values.put(MovieEntry.COLUMN_VIDEO, movie.optBoolean(MovieEntry.COLUMN_VIDEO) ? 1 : 0);
+                values.put(MovieEntry.COLUMN_VOTE_AVERAGE, movie.optDouble(MovieEntry.COLUMN_VOTE_AVERAGE));
+                values.put(MovieEntry.COLUMN_VOTE_COUNT, movie.optInt(MovieEntry.COLUMN_VOTE_COUNT));
+
+                long _id = db.insert(MovieEntry.TABLE_NAME, null, values);
+                result = _id > 0;
+                db.close();
+            }
+        }
+
+        return result;
+    }
+
+    // TODO: Delete poster and backdrop images from internal storage
+    public boolean removeFavorite(JSONObject movie) {
+        boolean result = false;
+
+        if (movie != null) {
+            if (isFavorite(movie)) {
+                final int movieId = movie.optInt("id");
+
+                if (movieId > 0) {
+                    final SQLiteDatabase db = new MoviesDBHelper(getActivity()).getWritableDatabase();
+                    int rowsDeleted = db.delete(
+                            MovieEntry.TABLE_NAME,
+                            " = ?",
+                            new String[]{ String.valueOf(movieId) }
+                    );
+                    result = rowsDeleted > 0;
+                    db.close();
+                }
+            }
+        }
+
+        return result;
     }
 }

@@ -2,10 +2,13 @@ package com.example.jagr.comingsoon;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.preference.PreferenceManager;
 import android.util.Log;
 
 import com.example.jagr.comingsoon.data.MoviesContract;
+import com.example.jagr.comingsoon.data.MoviesDBHelper;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -35,78 +38,6 @@ public class Utility {
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
         return prefs.getString(context.getString(R.string.pref_sort_key),
                 context.getString(R.string.pref_sort_default));
-    }
-
-    public static JSONArray getFavorites(Context context) {
-        JSONArray result = new JSONArray();
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
-        Set<String> favs = prefs.getStringSet(context.getString(R.string.pref_favorites), new HashSet<String>());
-        for (String fav : favs) {
-            try {
-                result.put(new JSONObject(fav));
-            } catch (JSONException e) {
-                Log.e(LOG_TAG, e.toString());
-                e.printStackTrace();
-            }
-        }
-        return result;
-    }
-
-    public static boolean addFavorite(Context context, JSONObject movie) {
-        boolean result = false;
-
-        if (movie != null) {
-            if (!isFavorite(context, movie)) {
-                SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
-                Set<String> favs = prefs.getStringSet(context.getString(R.string.pref_favorites), new HashSet<String>());
-                if (favs.add(movie.toString())) {
-                    SharedPreferences.Editor editor = prefs.edit();
-                    editor.putStringSet(context.getString(R.string.pref_favorites), favs);
-                    result = editor.commit();
-                }
-            }
-        }
-
-        return result;
-    }
-
-    public static boolean removeFavorite(Context context, JSONObject movie) {
-        boolean result = false;
-
-        if (movie != null) {
-            if (isFavorite(context, movie)) {
-                SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
-                Set<String> favs = prefs.getStringSet(context.getString(R.string.pref_favorites), new HashSet<String>());
-                if (favs.remove(movie.toString())) {
-                    SharedPreferences.Editor editor = prefs.edit();
-                    editor.putStringSet(context.getString(R.string.pref_favorites), favs);
-                    result = editor.commit();
-                }
-            }
-        }
-
-        return result;
-    }
-
-    public static boolean isFavorite(Context context, JSONObject movie) {
-        boolean result = false;
-
-        if (movie != null) {
-            final int movieId = movie.optInt("id");
-
-            if (movieId > 0) {
-                JSONArray favs = getFavorites(context);
-                for (int i = 0; i < favs.length(); i++) {
-                    JSONObject fav = favs.optJSONObject(i);
-                    if (fav.optInt("id") == movieId) {
-                        result = true;
-                        break;
-                    }
-                }
-            }
-        }
-
-        return result;
     }
 
     public static String getDisplayDensity(Context context) {
