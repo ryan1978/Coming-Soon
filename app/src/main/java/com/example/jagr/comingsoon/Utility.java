@@ -2,20 +2,7 @@ package com.example.jagr.comingsoon;
 
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.database.Cursor;
-import android.database.sqlite.SQLiteDatabase;
 import android.preference.PreferenceManager;
-import android.util.Log;
-
-import com.example.jagr.comingsoon.data.MoviesContract;
-import com.example.jagr.comingsoon.data.MoviesDBHelper;
-
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import java.util.HashSet;
-import java.util.Set;
 
 /**
  * Created by jagr on 7/24/2015.
@@ -40,30 +27,51 @@ public class Utility {
                 context.getString(R.string.pref_sort_default));
     }
 
-    public static String getDisplayDensity(Context context) {
+    public static String getImageFolder(Context context) {
         String result = "ldpi";
         float density = context.getResources().getDisplayMetrics().density;
 
         if (density >= 4.0) {
-            // "w780"
-            result = "xxxhdpi";
+            // "xxxhdpi"
+            result = "w780";
         } else if (density >= 3.0) {
-            // "w500"
-            result = "xxhdpi";
+            // "xxhdpi"
+            result = "w500";
         } else if (density >= 2.0) {
-            // "w342"
-            result = "xhdpi";
+            // "xhdpi"
+            result = "w342";
         } else if (density >= 1.5) {
-            // "w185"
-            result = "hdpi";
+            // "hdpi"
+            result = "w185";
         } else if (density >= 1.0) {
-            // "w154"
-            result = "mdpi";
+            // "mdpi"
+            result = "w154";
         } else {
-            // "w92"
-            result = "ldpi";
+            // "ldpi"
+            result = "w92";
         }
 
         return result;
+    }
+
+    public static int getImagePlaceholderId(Context context) {
+        int placeHolderId;
+        String imageFolder = getImageFolder(context);
+
+        if (imageFolder.equals("w92")) {
+            placeHolderId = R.drawable.placeholder_w92;
+        } else if (imageFolder.equals("w154")) {
+            placeHolderId = R.drawable.placeholder_w154;
+        } else if (imageFolder.equals("w185")) {
+            placeHolderId = R.drawable.placeholder_w185;
+        } else if (imageFolder.equals("w342")) {
+            placeHolderId = R.drawable.placeholder_w342;
+        } else if (imageFolder.equals("w500")) {
+            placeHolderId = R.drawable.placeholder_w500;
+        } else {
+            placeHolderId = R.drawable.placeholder_w780;
+        }
+
+        return placeHolderId;
     }
 }

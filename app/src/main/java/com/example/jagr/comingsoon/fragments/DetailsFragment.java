@@ -3,15 +3,12 @@ package com.example.jagr.comingsoon.fragments;
 import android.app.Activity;
 import android.app.Fragment;
 import android.content.ContentValues;
-import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -47,8 +44,6 @@ import java.io.InputStreamReader;
 import java.lang.ref.WeakReference;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.HashSet;
-import java.util.Set;
 
 /**
  * A placeholder fragment containing a simple view.
@@ -187,16 +182,34 @@ public class DetailsFragment extends Fragment {
             });
 
             if (!mMovie.isNull(MovieEntry.COLUMN_BACKDROP_PATH) && !mMovie.optString(MovieEntry.COLUMN_BACKDROP_PATH).equals("")) {
-                Picasso.with(getActivity()).load("http://image.tmdb.org/t/p/w780" + mMovie.optString(MovieEntry.COLUMN_BACKDROP_PATH)).into(backdrop);
+                Picasso
+                        .with(getActivity())
+                        .load("http://image.tmdb.org/t/p/w780" + mMovie.optString(MovieEntry.COLUMN_BACKDROP_PATH))
+                        .placeholder(R.drawable.placeholder_w780)
+                        .into(backdrop);
             } else if (!mMovie.isNull(MovieEntry.COLUMN_POSTER_PATH) && !mMovie.optString(MovieEntry.COLUMN_POSTER_PATH).equals("")) {
-                Picasso.with(getActivity()).load("http://image.tmdb.org/t/p/w780" + mMovie.optString(MovieEntry.COLUMN_POSTER_PATH)).into(backdrop);
+                Picasso
+                        .with(getActivity())
+                        .load("http://image.tmdb.org/t/p/w780" + mMovie.optString(MovieEntry.COLUMN_POSTER_PATH))
+                        .placeholder(R.drawable.placeholder_w780)
+                        .into(backdrop);
             } else {
-                // TODO: FIND PLACEHOLDER IMAGE FOR BACKDROP
+                Picasso
+                        .with(getActivity())
+                        .load(R.drawable.placeholder_w780)
+                        .into(backdrop);
             }
             if (!mMovie.isNull(MovieEntry.COLUMN_POSTER_PATH) && !mMovie.optString(MovieEntry.COLUMN_POSTER_PATH).equals("")) {
-                Picasso.with(getActivity()).load("http://image.tmdb.org/t/p/w342" + mMovie.optString(MovieEntry.COLUMN_POSTER_PATH)).into(poster);
+                Picasso
+                        .with(getActivity())
+                        .load("http://image.tmdb.org/t/p/" + Utility.getImageFolder(getActivity()) + mMovie.optString(MovieEntry.COLUMN_POSTER_PATH))
+                        .placeholder(Utility.getImagePlaceholderId(getActivity()))
+                        .into(poster);
             } else {
-                // TODO: FIND PLACEHOLDER IMAGE FOR POSTER
+                Picasso
+                        .with(getActivity())
+                        .load(Utility.getImagePlaceholderId(getActivity()))
+                        .into(poster);
             }
             title.setText(mMovie.isNull(MovieEntry.COLUMN_TITLE) ? "Not Available" : mMovie.optString(MovieEntry.COLUMN_TITLE));
             overview.setText(mMovie.isNull(MovieEntry.COLUMN_OVERVIEW) ? "Not Available" : mMovie.optString(MovieEntry.COLUMN_OVERVIEW));
@@ -416,7 +429,7 @@ public class DetailsFragment extends Fragment {
         private boolean mFetching   = false;
 
         public ReviewAdapter(Activity activity, int movieId) {
-            mActivity   = new WeakReference<Activity>(activity);
+            mActivity   = new WeakReference<>(activity);
             mMovieId    = movieId;
         }
 
@@ -650,7 +663,6 @@ public class DetailsFragment extends Fragment {
         return result;
     }
 
-    // TODO: Download and store poster and backdrop images to internal storage
     public boolean addFavorite(JSONObject movie) {
         boolean result = false;
 
@@ -687,7 +699,6 @@ public class DetailsFragment extends Fragment {
         return result;
     }
 
-    // TODO: Delete poster and backdrop images from internal storage
     public boolean removeFavorite(JSONObject movie) {
         boolean result = false;
 
