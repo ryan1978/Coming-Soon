@@ -49,6 +49,30 @@ public class MoviesAdapter extends JSONArrayAdapter {
     public int getPageCount() {
         return mPageCount;
     }
+    /**
+     * Sets all of the data for this adapter so it can restore from instance state
+     * @param page The current page number
+     * @param count The total number of pages that can be retrieved
+     * @param data The JSONArray of data this adapter uses
+     */
+    public void setData(int page, int count, JSONArray data) {
+        setCurrentPage(page);
+        setPageCount(count);
+        setData(data);
+        notifyDataSetChanged();
+    }
+    /**
+     * Sets all of the data for this adapter so it can restore from instance state
+     * @param page The current page number
+     * @param count The total number of pages that can be retrieved
+     * @param data The JSONArray of data this adapter uses
+     */
+    public void setData(int page, int count, String data) {
+        setCurrentPage(page);
+        setPageCount(count);
+        setData(data);
+        notifyDataSetChanged();
+    }
 
     /**
      * Returns a boolean indicating if more pages can be fetched
