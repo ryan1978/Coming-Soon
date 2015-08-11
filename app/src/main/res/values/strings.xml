@@ -17,6 +17,9 @@
     <string name="pref_sort_key" translatable="false">sort_order</string>
     <string name="pref_sort_popular" translatable="false">popularity.desc</string>
     <string name="pref_sort_rating" translatable="false">vote_average.desc</string>
+    <string name="pref_sort_top_rated" translatable="false">top_rated</string>
+    <string name="pref_sort_now_playing" translatable="false">now_playing</string>
+    <string name="pref_sort_upcoming" translatable="false">upcoming</string>
     <string name="pref_sort_favorite" translatable="false">favorites</string>
     <string name="pref_sort_default" translatable="false">@string/pref_sort_popular</string>
     <!-- END PREFERENCES -->
