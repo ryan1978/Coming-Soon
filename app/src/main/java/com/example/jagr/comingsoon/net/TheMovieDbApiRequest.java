@@ -9,7 +9,6 @@ import com.example.jagr.comingsoon.Utility;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -29,6 +28,10 @@ public class TheMovieDbApiRequest {
     private static final String MOVIEDB_BASE_URL    = "http://api.themoviedb.org/3/";
     public enum ApiCall {
         DISCOVER_MOVIES("discover/movie"),
+        NOWPLAYING_MOVIES("movie/now_playing"),
+        POPULAR_MOVIES("movie/popular"),
+        TOPRATED_MOVIES("movie/top_rated"),
+        UPCOMING_MOVIES("movie/upcoming"),
         MOVIE_VIDEOS("movie/{0}/videos"),
         MOVIE_REVIEWS("movie/{0}/reviews");
 
@@ -107,8 +110,10 @@ public class TheMovieDbApiRequest {
         String baseUri = MOVIEDB_BASE_URL + mEndPoint.getPath() + "?";
 
         // Replace any path params
-        for (int i = 0; i < mPathParams.length; i++) {
-            baseUri = baseUri.replace("{"+i+"}", mPathParams[i]);
+        if (mPathParams != null) {
+            for (int i = 0; i < mPathParams.length; i++) {
+                baseUri = baseUri.replace("{" + i + "}", mPathParams[i]);
+            }
         }
 
         Uri uri = Uri.parse(baseUri);
@@ -124,8 +129,6 @@ public class TheMovieDbApiRequest {
 
         // Append API Key
         uri = uri.buildUpon().appendQueryParameter("api_key", Utility.getApiKey(mContext)).build();
-
-        Log.d(LOG_TAG, "Built URL: " + uri.toString());
 
         return uri.toString();
     }
