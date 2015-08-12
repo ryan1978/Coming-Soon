@@ -128,8 +128,10 @@ public class MoviesAdapter extends JSONArrayAdapter {
         if (posterPath.trim().length() > 0) {
             Picasso
                     .with(mContext)
-                    .load("http://image.tmdb.org/t/p/w154" + posterPath)
+                    .load("http://image.tmdb.org/t/p/" + Utility.getImageFolder(mContext) + posterPath)
                     .placeholder(Utility.getImagePlaceholderId(mContext))
+                    .fit()
+                    .centerCrop()
                     .into(poster);
         }
         title.setText(movieTitle);
@@ -260,7 +262,7 @@ public class MoviesAdapter extends JSONArrayAdapter {
             super.onPostExecute(response);
             MoviesAdapter adapter = mAdapter.get();
 
-            if (adapter != null && response != null) {
+            if (adapter != null && response != null && response.keys().hasNext()) {
                 int page            = response.optInt("page");
                 int pageCount       = response.optInt("total_pages");
                 JSONArray movies    = response.optJSONArray("results");
